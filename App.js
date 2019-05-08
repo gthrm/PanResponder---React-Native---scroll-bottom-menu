@@ -20,52 +20,33 @@ export default class App extends Component {
 
     const parentResponder = PanResponder.create({
       onMoveShouldSetPanResponderCapture: (e, gestureState) => {
-        console.log('====================================')
-        console.log("onMoveShouldSetPanResponderCapture", e, gestureState)
-        console.log('====================================')
         return false
       },
-      onStartShouldSetPanResponder: () => {
-        console.log('====================================')
-        console.log("onStartShouldSetPanResponder")
-        console.log('====================================')
-        return false
-      },
+      onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (e, gestureState) => {
-        console.log('====================================')
-        console.log("onMoveShouldSetPanResponder")
-        console.log('====================================')
-        if (this.state.toTop) {
+        if (this.state.toTop && this.scrollIsEnd) {
           return gestureState.dy > 6
-        } else {
+        } else if(!this.state.toTop) {
           return gestureState.dy < -6
         }
       },
       onPanResponderTerminationRequest: () => {
-        console.log('====================================')
-        console.log("onPanResponderTerminationRequest")
-        console.log('====================================')
-        return false
-      },
+        return false;},
       onPanResponderMove: (evt, gestureState) => {
-        console.log('====================================')
-        console.log("onPanResponderMove")
-        console.log('====================================')
         let newy = gestureState.dy
-        if (this.state.toTop && newy < 0) return
-        if (this.state.toTop) {
-          // this.refs.scroll.scrollTo({x: 0, y: 0, animated: true}) ///
-          position.setValue({ x: 0, y: newy });
-        } else {
-          position.setValue({ x: 0, y: initialPosition.y + newy });
-        }
+
+          // if (this.state.toTop && newy < 0 && this.scrollViewPosition !== 0) return
+          if (this.state.toTop && newy >= 0 && this.scrollIsEnd) {
+            position.setValue({ x: 0, y: newy });
+          } else if (!this.state.toTop ) {
+            position.setValue({ x: 0, y: initialPosition.y + newy });
+          }
+        
+
       },
       onPanResponderRelease: (evt, gestureState) => {
-        // console.log('====================================')
-        // console.log("onPanResponderRelease")
-        // console.log('====================================')
-        if (this.state.toTop) {
-          if (gestureState.dy > 50) {
+        if (this.state.toTop && this.scrollIsEnd) {
+          if (gestureState.dy > 50 ) {
             this.snapToBottom(initialPosition)
           } else {
             this.snapToTop()
@@ -83,12 +64,12 @@ export default class App extends Component {
     this.offset = 0;
     this.parentResponder = parentResponder;
     this.state = { position, toTop: false };
+    this.scrollView = null;
+    this.scrollViewPosition = 0;
+    this.scrollIsEnd = true
   }
 
   snapToTop = () => {
-    // console.log('====================================')
-    // console.log('snapToTop ', this.state.position)
-    // console.log('====================================')
     Animated.timing(this.state.position, {
       toValue: { x: 0, y: 0 },
       duration: 300,
@@ -97,11 +78,6 @@ export default class App extends Component {
   }
 
   snapToBottom = (initialPosition) => {
-    
-    
-    // console.log('====================================')
-    // console.log('snapToBottom ', this.state.position)
-    // console.log('====================================')
     Animated.timing(this.state.position, {
       toValue: initialPosition,
       duration: 150,
@@ -123,7 +99,13 @@ export default class App extends Component {
         <Text style={styles.instructions}>{instructions}</Text>
         <Animated.View style={[styles.draggable, { height }, this.state.position.getLayout()]} {...this.parentResponder.panHandlers}>
           <Text style={styles.dragHandle}>=</Text>
-          <ScrollView ref={"scroll"} style={styles.scroll}>
+          <ScrollView
+            style={styles.scroll}
+            ref={ref => { this.scrollView = ref; }}
+            onLayout={event => this.lololosh(event)}
+            onScroll={this.handleScroll}
+            scrollEventThrottle={16}
+          >
             <Text style={{ fontSize: 44 }}>Lorem Ipsum</Text>
             <Text style={{ fontSize: 44 }}>dolor sit amet</Text>
             <Text style={{ fontSize: 44 }}>consectetur adipiscing elit.</Text>
@@ -143,6 +125,23 @@ export default class App extends Component {
         </Animated.View>
       </View>
     );
+  }
+
+  handleScroll = (event) => {
+    
+    this.scrollIsEnd = false;
+    console.log(event.nativeEvent.contentOffset.y);
+    this.scrollViewPosition = event.nativeEvent.contentOffset.y
+    if(event.nativeEvent.contentOffset.y <= 0) {
+      console.log(event.nativeEvent.contentOffset.y <= 0);
+      this.scrollIsEnd = true;
+    }
+  }
+
+  lololosh = (event) => {
+    console.log('====================================')
+    console.log(event.nativeEvent.layout.height)
+    console.log('====================================')
   }
 }
 
